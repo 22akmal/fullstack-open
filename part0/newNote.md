@@ -5,7 +5,7 @@ sequenceDiagram
 
     Note right of browser: Button on the form is clicked
 
-    browser->>server: POST https://studies.cs.helsinki.fi/exampleapp/new_notes
+    browser->>server: POST https://studies.cs.helsinki.fi/exampleapp/new_note
     activate server
     server-->>browser: HTTP status code 302 (URL Redirect)
     deactivate server
