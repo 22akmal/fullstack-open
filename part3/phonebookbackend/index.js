@@ -1,11 +1,13 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
+const Person = require('./models/person')
 const app = express()
 
 app.use(express.json())
 app.use(express.static('dist'))
 
-morgan.token('body', (request, response) => 
+morgan.token('body', (request, response) =>
   JSON.stringify(request.body)
 )
 
@@ -35,20 +37,20 @@ let persons = [
     "number": "39-23-6423122"
   }
 ]
-
 app.get('/api/persons', (request, response) => {
-  response.send(persons)
+  Person.find({}).then(person => {
+    response.json(person)
+  })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  const person = persons.find(person => person.id === id)
-
-  if (person){
-    response.send(person)
-  } else {
-    response.status(404).end()
-  }
+  Person.findById(request.params.id).then(person => {
+    if (person) {
+      response.json(person)
+    } else {
+      response.status(404).end()
+    }
+  })
 })
 
 app.get('/info', (request, response) => {
@@ -65,12 +67,12 @@ const randomId = () => {
   let id
   do {
     id = Math.floor(Math.random() * 10000)
-  }  while (listId.has(id))
+  } while (listId.has(id))
 
   return String(id)
 }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', async (request, response, next) => {
   const body = request.body
 
   if (!body.name || !body.number) {
@@ -79,23 +81,26 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  const existingName = new Set(persons.map(person => person.name))
+  try {
+    const isExist = await Person.exists({ name: body.name })
 
-  if (existingName.has(body.name)){
-    return response.status(400).json({
-      error: 'name must be unique'
-    })
+    if (isExist) {
+      return response.status(400).json({
+        error: 'name must be unique'
+      })
+    } else {
+      const person = new Person({
+        name: body.name,
+        number: body.number
+      })
+
+      person.save().then(result => {
+        response.json(result)
+      })
+    }
+  } catch (error) {
+    next(error)
   }
-
-  const person = {
-    id: randomId(),
-    name: body.name,
-    number: body.number
-  }
-
-  persons = persons.concat(person)
-
-  response.json(person)
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -105,8 +110,7 @@ app.delete('/api/persons/:id', (request, response) => {
   response.status(204).end()
 })
 
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
