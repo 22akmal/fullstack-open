@@ -25,6 +25,12 @@ function App() {
         }, 5000)
         setPersons(persons.concat(newPerson))
       })
+      .catch(error => {
+        setNotif(['valid error', error.response.data.error])
+        setTimeout(() => {
+          setNotif(null)
+        }, 5000)
+      })
   }
 
   const updatePerson = (person, newNumber) => {
@@ -39,13 +45,20 @@ function App() {
         setPersons(persons.map(p => p.id === updatedNumber.id ? updatedNumber : p))
       })
       .catch(error => {
-        setNotif(['error', changedNumber.name])
-        setTimeout(() => {
-          setNotif(null)
-        }, 5000)
-        personService
-          .getAll()
-          .then(dataInitial => setPersons(dataInitial))
+        if (error.response.data.name === 'ValidationError') {
+          setNotif(['valid error', error.response.data.error])
+          setTimeout(() => {
+            setNotif(null)
+          }, 5000)
+        } else {
+          setNotif(['error', changedNumber.name])
+          setTimeout(() => {
+            setNotif(null)
+          }, 5000)
+          personService
+            .getAll()
+            .then(dataInitial => setPersons(dataInitial))
+        }
       })
   }
 
