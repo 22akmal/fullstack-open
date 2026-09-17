@@ -5,7 +5,8 @@ const supertest = require('supertest')
 const app = require('../app')
 const helper = require('./test_helper')
 const Blog = require('../models/blog')
-const blog = require('../models/blog')
+const User = require('../models/user')
+const bcryptjs = require('bcryptjs')
 
 const api = supertest(app)
 
@@ -20,6 +21,30 @@ describe('when there is initially some notes saved', () => {
       .get('/api/blogs')
       .expect(200)
       .expect('Content-Type', /application\/json/)
+  })
+
+  test('blog saving fails because unporvided token', async () => {
+    const newUser = {
+      username: 'adit',
+      name: 'Adit',
+      password: 'abcd',
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+
+    const newBlog = {
+      title: "prince",
+      author: "adit",
+      url: "abcde"
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
   })
 
   test('all blogs are returned', async () => {
@@ -72,7 +97,7 @@ describe('when there is initially some notes saved', () => {
   })
 
   describe('updating a blog post', () => {
-    test.only('adding like of a blog psts', async () => {
+    test('adding like of a blog psts', async () => {
       const blogAtStart = await helper.blogsInDb()
       const blogToUpdate = blogAtStart[0]
       const initialLike = blogToUpdate.likes
@@ -90,6 +115,75 @@ describe('when there is initially some notes saved', () => {
   })
 })
 
+describe('when there is initially one user in db', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcryptjs.hash('sekret', 10)
+    const user = new User({ username: 'root', passwordHash })
+
+    await user.save()
+  })
+
+  test('creation succeeds with a fresh username', async () => {
+    const userAtStart = await helper.usersInDb()
+
+    const newUser = {
+      username: 'adam',
+      name: 'Adam',
+      password: 'abcd',
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const userAtEnd = await helper.usersInDb()
+    assert.strictEqual(userAtEnd.length, userAtStart.length + 1)
+
+    const usernames = userAtEnd.map(u => u.username)
+    assert(usernames.includes(newUser.username))
+  })
+
+  test('creation fails with invalid password and username with length less than 3', async () => {
+    const newUser = {
+      username: 'Sa',
+      name: 'sarah',
+      password: 'ab'
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+  })
+
+  test('creation fails with common username', async () => {
+    const newUser = {
+      username: 'hera',
+      name: 'Hera sera',
+      password: 'abcde'
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+
+    const newUser2 = {
+      username: 'hera',
+      name: 'Selen hera',
+      password: '231uje'
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser2)
+      .expect(400)
+  })
+})
 
 after(async () => {
   await mongoose.connection.close()

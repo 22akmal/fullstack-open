@@ -1,8 +1,10 @@
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
 
 blogRouter.get('/', async (request, response) => {
-	const result = await Blog.find({})
+  const result = await Blog.find({}).populate('user')
   response.status(200).json(result)
 })
 
@@ -16,22 +18,64 @@ blogRouter.get('/:id', async (request, response) => {
 })
 
 blogRouter.post('/', async (request, response) => {
-	const blog = new Blog(request.body)
+  const body = request.body
+  if (!request.token){
+    return response.status(401).json({error: 'token unprovided'})
+  }
+  const decodedToken = jwt.verify(request.token, process.env.SECRET)
+  if (!decodedToken.id) {
+    return response.status(401).json({error: 'token invalid'})
+  }
 
-	const result = await blog.save()
+  const user = request.user
+
+  if (!user) {
+    return response.status(400).json({ error: 'userId missing or not valid' })
+  }
+
+  const blog = new Blog({
+    title: body.title,
+    author: body.author,
+    user: user._id,
+    url: body.url,
+    likes: 0
+  })
+
+  const result = await blog.save()
+  user.blogs = user.blogs.concat(result._id)
+  await user.save()
+
   response.status(201).json(result)
 })
 
 blogRouter.delete('/:id', async (request, response) => {
-  await Blog.findByIdAndDelete(request.params.id)
-  response.status(204).end()
+  const blogId = request.params.id
+  if (!request.token){
+    return response.status(401).json({error: "token unprovided"})
+  }
+  const decodedToken = jwt.verify(request.token, process.env.SECRET)
+  if (!decodedToken){
+    return response.status(401).json({error: "token invalid"})
+  }
+
+  const blog = await Blog.findById(blogId)
+  if (!blog){
+    return response.status(400).json({error: "blogId missing or not valid"})
+  }
+
+  if (blog.user.toString() === decodedToken.id.toString()){
+    await Blog.findByIdAndDelete(blog.id)
+    response.status(204).end()
+  } else {
+    return response.status(403).json({ error: 'only the creator can delete this blog' })
+  }
 })
 
 blogRouter.put('/:id', async (request, response) => {
   const blog = request.body
 
   const result = await Blog.findById(request.params.id)
-  if (!result){
+  if (!result) {
     return response.status(404).end()
   }
 

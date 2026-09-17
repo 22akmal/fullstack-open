@@ -8,13 +8,16 @@
   "main": "index.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
-    "test": "cross-env NODE_ENV=test node --test",
+    "test": "cross-env NODE_ENV=testuser node --test",
+    "testuser": "cross-env NODE_ENV=testuser node --test",
     "dev": "cross-env NODE_ENV=development node --watch index.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.5"
   },
   "devDependencies": {
