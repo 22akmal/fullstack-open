@@ -1,0 +1,22 @@
+.userLoggedIn {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.loginError {
+  color: red;
+}
+
+.addingBlog {
+  color: green;
+}
+
+button {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+p {
+  margin-top: 1px;
+  margin-bottom: 1px;
+}
