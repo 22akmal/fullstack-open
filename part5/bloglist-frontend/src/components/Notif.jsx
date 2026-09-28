@@ -1,16 +1,10 @@
-const Notif = ({ message, type }) => {
-  if (type === 'loginError') {
+import { Alert } from "@mui/material"
+
+const Notif = ({ notification }) => {
+  if (notification.message) {
     return (
-      <div className="loginError">
-        <h2>{message}</h2>
-      </div>
-    )
-  }
-  if (type === 'addingBlog') {
-    return (
-      <div className="addingBlog">
-        <h2>{message}</h2>
-      </div>
+      <Alert style={{ marginTop: 10, marginBottom: 10 }} severity={notification.type}>
+        {notification.message}</Alert>
     )
   }
 }

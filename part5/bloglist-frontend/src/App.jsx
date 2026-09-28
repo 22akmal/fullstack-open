@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
-import Blog from './components/Blog'
+import { Routes, Route, Link, useMatch, useNavigate } from 'react-router-dom'
+import { Container, AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
+import BlogBody from './components/BlogBody'
 import blogService from './services/blogs'
-import Notif from './components/Notif'
-import loginService from './services/login'
+import Login from './components/Login'
+import Blog from './components/Blog'
 import Create from './components/Create'
-import Togglable from './components/Togglable'
+import Notif from './components/Notif'
+
 
 const App = () => {
-  const [blogs, setBlogs] = useState([])
-  const [Message, setMessage] = useState(null)
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [notification, setNotification] = useState({message: null, type: 'success'})
   const [user, setUser] = useState(null)
+  const [blogs, setBlogs] = useState([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -34,24 +36,6 @@ const App = () => {
     }
   }, [])
 
-  const handleLogin = async (event) => {
-    event.preventDefault()
-
-    try {
-      const user = await loginService.login({ username, password })
-      window.localStorage.setItem('loggedBlogAppUser', JSON.stringify(user))
-      blogService.setToken(user.token)
-      setUser(user)
-      setPassword('')
-      setUsername('')
-    } catch {
-      setMessage('wrong username or password')
-      setTimeout(() => {
-        setMessage(null)
-      }, 5000)
-    }
-  }
-
   const handleLogout = () => {
     window.localStorage.removeItem('loggedBlogAppUser')
     setUser(null)
@@ -60,22 +44,11 @@ const App = () => {
   const handleCreate = async (data) => {
     try {
       const newBlog = await blogService.create(data)
-      setMessage(`a new blog ${data.title} by ${user.name} added`)
+      setNotification({message: `a new blog ${data.title} by ${user.name} added`, type: 'success'})
       setTimeout(() => {
-        setMessage(null)
+        setNotification({message: null, type: 'success'})
       }, 5000)
       setBlogs(blogService.sortBlog(blogs.concat(newBlog)))
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
-  const handleUpdate = async (blogId) => {
-    const updatingBlog = blogs.find(blog => blog.id === blogId)
-    try {
-      await blogService.update(updatingBlog)
-      const updatedBlogs = blogs.map(blog => blog.id === blogId ? { ...blog, likes: blog.likes + 1 } : blog)
-      setBlogs(blogService.sortBlog(updatedBlogs))
     } catch (error) {
       console.error(error)
     }
@@ -86,6 +59,7 @@ const App = () => {
       if (window.confirm(`remove blog ${title} by ${author}`)) {
         await blogService.deleteBlog(blogId)
         const updatedBlogs = blogs.filter(blog => blog.id !== blogId)
+        navigate('/')
         setBlogs(blogService.sortBlog(updatedBlogs))
       }
     } catch (error) {
@@ -93,45 +67,69 @@ const App = () => {
     }
   }
 
-  if (user === null) {
-    return (<div>
-      <h2>Log in to application</h2>
-      <Notif message={Message} type='loginError' />
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Username
-            <input type="text" value={username} onChange={({ target }) => setUsername(target.value)} />
-          </label>
-        </div>
-        <div>
-          <label>Password
-            <input type="password" value={password} onChange={({ target }) => setPassword(target.value)} />
-          </label>
-        </div>
-        <button type='submit'>login</button>
-      </form>
-    </div>
-    )
+  const match = useMatch('/blogs/:id')
+
+  const blog = match
+    ? blogs.find(blog => blog.id === match.params.id)
+    : null
+
+  const handleUpdate = async (blogId) => {
+    const updatingBlog = blog
+    try {
+      await blogService.update(updatingBlog)
+      const updatedBlogs = blogs.map(blog => blog.id === blogId ? { ...blog, likes: blog.likes + 1 } : blog)
+      setBlogs(blogService.sortBlog(updatedBlogs))
+    } catch (error) {
+      console.error(error)
+    }
   }
 
+  const padding = { padding: 5 }
+
   return (
-    <div>
-      <h2>blogs</h2>
-      <Notif message={Message} type='addingBlog' />
-      <div className='userLoggedIn'>
-        {user.name} logged in
-        <button onClick={handleLogout}>logout</button>
-      </div>
-      <h2>Create New</h2>
-      <Togglable buttonLable='create new blog'>
-        <Create onCreate={handleCreate} />
-      </Togglable>
-      <div>
-        {blogs.map(blog =>
-          <Blog key={blog.id} blog={blog} handleUpdate={handleUpdate} handleDelete={handleDelete} />
-        )}
-      </div>
-    </div>
+    <Container>
+        <AppBar position='static'>
+          <Toolbar>
+            <Typography variant='h6' component='div' sx={{flexGrow:1}}>
+              Blog App
+            </Typography>
+            <Button color='inherit' component={Link} to='/'>blogs</Button>
+            {user && <Button color='inherit' component={Link} to='/create'>new blog</Button>}
+            {!user ? <Button color='inherit' component={Link} to='/login'>login</Button> : <Button color='inherit' onClick={handleLogout}>logout</Button>}
+          </Toolbar>
+        </AppBar>
+
+        <Notif notification={notification}/>
+
+        <Routes>
+          <Route path='/blogs/:id' element={
+            <Blog
+              user={user}
+              blog={blog}
+              handleUpdate={handleUpdate}
+              handleDelete={handleDelete}
+            />
+          } />
+
+          <Route path='/' element={
+            <BlogBody
+              blogs={blogs}
+            />
+          } />
+
+          <Route path='/login' element={
+            <Login
+              notification={notification}
+              handleMessage={setNotification}
+              handleUser={setUser}
+            />
+          } />
+
+          <Route path='/create' element={
+            <Create onCreate={handleCreate} />
+          } />
+        </Routes>
+    </Container>
   )
 }
 

@@ -8,9 +8,10 @@
   "main": "index.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
-    "test": "cross-env NODE_ENV=testuser node --test",
-    "testuser": "cross-env NODE_ENV=testuser node --test",
-    "dev": "cross-env NODE_ENV=development node --watch index.js"
+    "test": "cross-env NODE_ENV=test node --test",
+    "testuser": "cross-env NODE_ENV=test node --test",
+    "dev": "cross-env NODE_ENV=development node --watch index.js",
+    "start:test": "cross-env NODE_ENV=test node --watch index.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

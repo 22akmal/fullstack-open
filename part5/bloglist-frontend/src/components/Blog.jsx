@@ -1,37 +1,33 @@
-import { useState } from 'react'
+import { Card, CardContent, Typography, Link, Button, Box } from "@mui/material"
 
-const Blog = ({ blog, handleUpdate, handleDelete }) => {
-  const [visible, setVisible] = useState(false)
-
-  const hideWhenVisible = { display: visible ? 'none' : '' }
-  const showWhenVisible = { display: visible ? '' : 'none' }
-
-  const toggleVisibility = () => {
-    setVisible(!visible)
-  }
-
-  const blogStyle = {
-    paddingTop: 10,
-    paddingLeft: 2,
-    border: 'solid',
-    borderWidth: 1,
-    marginBottom: 5
+const Blog = ({ user, blog, handleUpdate, handleDelete }) => {
+  if (!blog) {
+    return null
   }
 
   return (
-    <div style={blogStyle}>
-      <div style={hideWhenVisible}>
-        {blog.title} {blog.author}
-        <button onClick={toggleVisibility}>view</button>
-      </div>
-      <div style={showWhenVisible}>
-        <p>{blog.title} {blog.author} <button onClick={toggleVisibility}>hide</button></p>
-        <p>{blog.url}</p>
-        <p>likes {blog.likes} <button onClick={() => handleUpdate(blog.id)}>like</button></p>
-        <p>{blog.user.name}</p>
-        <button onClick={() => handleDelete(blog.id, blog.title, blog.author)}>delete</button>
-      </div>
-    </div>
+    <Card variant="outlined">
+      <CardContent sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+        <Typography variant="h5" component='h2'>
+          {`${blog.title}`}
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          {`by ${blog.author}`}
+        </Typography>
+        <Link href={blog.url} target="_blank">{blog.url}</Link>
+        <Typography variant="body2" color="text.secondary">
+          {`Added by ${blog.user.name}`}
+        </Typography>
+        <Box sx={{display: 'flex', alignItems: 'center', gap:1.5}}>
+          <Typography variant="body1">
+           {blog.likes} likes 
+          </Typography>
+          {user && (<Button variant="outlined" size="small" onClick={() => handleUpdate(blog.id)}>like</Button>)}
+          {user?.username === blog.user?.username && (
+            <Button variant="outlined" color="error" size="small" onClick={() => handleDelete(blog.id, blog.title, blog.author)}>remove</Button>)}
+        </Box>
+      </CardContent>
+    </Card>
   )
 }
 
